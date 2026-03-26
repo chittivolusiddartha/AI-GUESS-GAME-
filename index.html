@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Number Guessing Game</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: linear-gradient(to right, #141e30, #243b55);
+            color: white;
+        }
+
+        .container {
+            margin-top: 40px;
+        }
+
+        input {
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            margin: 8px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        .high { background: red; color: white; }
+        .low { background: blue; color: white; }
+        .correct { background: green; color: white; }
+
+        #startScreen {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            width: 400px;
+            margin: auto;
+        }
+
+        #gameArea {
+            display: none;
+        }
+
+        p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .leaderboard {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 10px;
+            width: 250px;
+            margin: auto;
+        }
+
+        h2 {
+            animation: fade 0.4s ease-in-out;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- START SCREEN -->
+    <div id="startScreen">
+        <h1 style="font-size:40px;">🎮 AI Number Guessing Game</h1>
+
+        <h3>📖 Instructions:</h3>
+        <p>
+            • Think of a number within the selected range <br>
+            • AI will guess your number <br>
+            • Click Too High / Too Low based on guess <br>
+            • Click Correct when AI is right <br>
+            • Try minimum attempts to win 🏆
+        </p>
+
+        <input type="text" id="playerName" placeholder="Enter your name"><br><br>
+
+        <h3>Select Difficulty</h3>
+        <button onclick="setDifficulty(50)">Easy (1–50)</button>
+        <button onclick="setDifficulty(100)">Medium (1–100)</button>
+        <button onclick="setDifficulty(200)">Hard (1–200)</button><br><br>
+
+        <button onclick="startGame()">🚀 Start Game</button>
+    </div>
+
+    <!-- GAME AREA -->
+    <div id="gameArea">
+        <h2 id="welcome"></h2>
+        <h2 id="guess"></h2>
+        <p>Attempts: <span id="attempts">0</span></p>
+
+        <button class="high" onclick="tooHigh()">Too High 🔼</button>
+        <button class="low" onclick="tooLow()">Too Low 🔽</button>
+        <button class="correct" onclick="correct()">Correct ✅</button>
+
+        <br><br>
+        <button onclick="restartGame()">🔄 Restart</button>
+
+        <h3>🏆 Leaderboard</h3>
+        <div class="leaderboard">
+            <ul id="leaderboard"></ul>
+        </div>
+    </div>
+
+</div>
+
+<!-- SOUND -->
+<audio id="clickSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+<audio id="winSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+
+<script>
+
+let low, high, maxRange = 100, guess, attempts;
+let player = "";
+
+// Set difficulty
+function setDifficulty(range) {
+    maxRange = range;
+    alert("Difficulty set: 1 to " + range);
+}
+
+// Start game
+function startGame() {
+    player = document.getElementById("playerName").value;
+
+    if (player === "") {
+        alert("Enter your name!");
+        return;
+    }
+
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("gameArea").style.display = "block";
+
+    document.getElementById("welcome").innerText =
+        "Welcome " + player + "! Think of a number (1-" + maxRange + ")";
+
+    resetValues();
+    loadLeaderboard();
+    makeGuess();
+}
+
+// Reset values
+function resetValues() {
+    low = 1;
+    high = maxRange;
+    attempts = 0;
+}
+
+// Guess logic
+function makeGuess() {
+    if (low > high) {
+        alert("Invalid inputs! Restarting...");
+        restartGame();
+        return;
+    }
+
+    guess = Math.floor((low + high) / 2);
+    attempts++;
+
+    document.getElementById("guess").innerText = "My guess is: " + guess;
+    document.getElementById("attempts").innerText = attempts;
+}
+
+// Sounds
+function playClick() {
+    document.getElementById("clickSound").play();
+}
+
+// Buttons
+function tooHigh() {
+    playClick();
+    high = guess - 1;
+    makeGuess();
+}
+
+function tooLow() {
+    playClick();
+    low = guess + 1;
+    makeGuess();
+}
+
+// Correct
+function correct() {
+    document.getElementById("winSound").play();
+
+    document.getElementById("guess").innerText =
+        "🎉 Guessed in " + attempts + " attempts!";
+
+    saveScore(player, attempts);
+    loadLeaderboard();
+}
+
+// Save score
+function saveScore(name, score) {
+    let data = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+    data.push({ name, score });
+
+    data.sort((a, b) => a.score - b.score);
+
+    data = data.slice(0, 5);
+
+    localStorage.setItem("leaderboard", JSON.stringify(data));
+}
+
+// Load leaderboard
+function loadLeaderboard() {
+    let data = JSON.parse(localStorage.getItem("leaderboard")) || [];
+    let list = document.getElementById("leaderboard");
+    list.innerHTML = "";
+
+    data.forEach(p => {
+        let li = document.createElement("li");
+        li.innerText = p.name + " - " + p.score + " attempts";
+        list.appendChild(li);
+    });
+}
+
+// Restart
+function restartGame() {
+    resetValues();
+    makeGuess();
+}
+
+</script>
+
+</body>
+</html>
